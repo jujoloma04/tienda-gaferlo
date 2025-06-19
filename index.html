@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gabriel Fernando López Montes - Sellos Industriales</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/babel-standalone@6/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const Navbar = () => (
+      <nav className="bg-blue-900 text-white p-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">GFLM Sellos Industriales</h1>
+        <div className="space-x-4">
+          <a href="#home" className="hover:text-blue-300">Inicio</a>
+          <a href="#custom-seals" className="hover:text-blue-300">Sellos de Fabricación</a>
+          <a href="#standard-seals" className="hover:text-blue-300">Sellos Estándar</a>
+          <a href="admin.html" className="hover:text-blue-300">Administrador</a>
+        </div>
+      </nav>
+    );
+
+    const Hero = () => (
+      <section id="home" className="bg-blue-100 text-center py-20">
+        <h2 className="text-4xl font-bold text-blue-900 mb-4">Sellos Industriales de Calidad</h2>
+        <p className="text-lg text-gray-700 mb-6">Soluciones personalizadas y estándar por Gabriel Fernando López Montes.</p>
+        <a href="#custom-seals" className="bg-blue-900 text-white px-6 py-3 rounded-full hover:bg-blue-700 mr-4">Sellos de Fabricación</a>
+        <a href="#standard-seals" className="bg-blue-900 text-white px-6 py-3 rounded-full hover:bg-blue-700">Sellos Estándar</a>
+      </section>
+    );
+
+    const CustomSealsForm = () => {
+      const [formData, setFormData] = React.useState({
+        name: '', email: '', measurements: '', material: '', conditions: '', fluid: ''
+      });
+
+      const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+      };
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+          const response = await fetch('http://localhost:5000/api/quote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+          const result = await response.json();
+          alert(result.message);
+          setFormData({ name: '', email: '', measurements: '', material: '', conditions: '', fluid: '' });
+        } catch (error) {
+          alert('Error al enviar la solicitud');
+        }
+      };
+
+      return (
+        <section id="custom-seals" className="py-12 bg-gray-100">
+          <h2 className="text-3xl font-bold text-center text-blue-900 mb-8">Sellos de Fabricación</h2>
+          <div className="max-w-2xl mx-auto px-4">
+            <p className="text-gray-700 mb-4">Especifique los detalles para su sello personalizado.</p>
+            <div className="space-y-4">
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Nombre"
+                className="w-full p-3 border rounded-lg"
+                required
+              />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Correo Electrónico"
+                className="w-full p-3 border rounded-lg"
+                required
+              />
+              <textarea
+                name="measurements"
+                value={formData.measurements}
+                onChange={handleChange}
+                placeholder="Medidas del sello (ej. diámetro, grosor)"
+                className="w-full p-3 border rounded-lg h-24"
+                required
+              ></textarea>
+              <input
+                type="text"
+                name="material"
+                value={formData.material}
+                onChange={handleChange}
+                placeholder="Material deseado (ej. NBR, Vitón)"
+                className="w-full p-3 border rounded-lg"
+                required
+              />
+              <textarea
+                name="conditions"
+                value={formData.conditions}
+                onChange={handleChange}
+                placeholder="Condiciones de trabajo (ej. presión, temperatura)"
+                className="w-full p-3 border rounded-lg h-24"
+                required
+              ></textarea>
+              <input
+                type="text"
+                name="fluid"
+                value={formData.fluid}
+                onChange={handleChange}
+                placeholder="Tipo de fluido a sellar"
+                className="w-full p-3 border rounded-lg"
+                required
+              />
+              <button
+                onClick={handleSubmit}
+                className="bg-blue-900 text-white px-6 py-3 rounded-full hover:bg-blue-700"
+              >
+                Enviar Solicitud
+              </button>
+            </div>
+          </div>
+        </section>
+      );
+    };
+
+    const StandardSealCard = ({ seal }) => (
+      <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div className="p-4">
+          <h3 className="text-xl font-semibold text-blue-900">{seal.name}</h3>
+          <p className="text-gray-600">Material: {seal.material}</p>
+          <p className="text-gray-600">{seal.description}</p>
+          <p className="text-lg font-bold text-blue-900 mt-2">${seal.price.toLocaleString()}</p>
+        </div>
+      </div>
+    );
+
+    const StandardSealsForm = () => {
+      const [formData, setFormData] = React.useState({
+        name: '', email: '', sealId: '', measurements: ''
+      });
+      const [seals, setSeals] = React.useState([]);
+
+      React.useEffect(() => {
+        fetch('http://localhost:5000/api/seals')
+          .then(res => res.json())
+          .then(data => setSeals(data))
+          .catch(err => console.error('Error al cargar sellos:', err));
+      }, []);
+
+      const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+      };
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        const selectedSeal = seals.find(seal => seal.id === parseInt(formData.sealId));
+        const submissionData = { ...formData, sealName: selectedSeal ? selectedSeal.name : '' };
+        try {
+          const response = await fetch('http://localhost:5000/api/quote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(submissionData)
+          });
+          const result = await response.json();
+          alert(result.message);
+          setFormData({ name: '', email: '', sealId: '', measurements: '' });
+        } catch (error) {
+          alert('Error al enviar la solicitud');
+        }
+      };
+
+      return (
+        <section id="standard-seals" className="py-12 bg-white">
+          <h2 className="text-3xl font-bold text-center text-blue-900 mb-8">Sellos Estándar</h2>
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              {seals.map(seal => (
+                <StandardSealCard key={seal.id} seal={seal} />
+              ))}
+            </div>
+            <h3 className="text-2xl font-semibold text-blue-900 mb-4">Solicitar Cotización</h3>
+            <div className="max-w-2xl mx-auto space-y-4">
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Nombre"
+                className="w-full p-3 border rounded-lg"
+                required
+              />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Correo Electrónico"
+                className="w-full p-3 border rounded-lg"
+                required
+              />
+              <select
+                name="sealId"
+                value={formData.sealId}
+                onChange={handleChange}
+                className="w-full p-3 border rounded-lg"
+                required
+              >
+                <option value="">Seleccione un sello</option>
+                {seals.map(seal => (
+                  <option key={seal.id} value={seal.id}>{seal.name}</option>
+                ))}
+              </select>
+              <textarea
+                name="measurements"
+                value={formData.measurements}
+                onChange={handleChange}
+                placeholder="Medidas del sello (ej. diámetro, grosor)"
+                className="w-full p-3 border rounded-lg h-24"
+                required
+              ></textarea>
+              <button
+                onClick={handleSubmit}
+                className="bg-blue-900 text-white px-6 py-3 rounded-full hover:bg-blue-700"
+              >
+                Enviar Solicitud
+              </button>
+            </div>
+          </div>
+        </section>
+      );
+    };
+
+    const App = () => (
+      <div>
+        <Navbar />
+        <Hero />
+        <CustomSealsForm />
+        <StandardSealsForm />
+        <footer className="bg-blue-900 text-white text-center py-4">
+          <p>© 2025 Gabriel Fernando López Montes. Todos los derechos reservados.</p>
+        </footer>
+      </div>
+    );
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>

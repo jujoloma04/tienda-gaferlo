@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Administrador - GFLM Sellos Industriales</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/babel-standalone@6/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const Navbar = () => (
+      <nav className="bg-blue-900 text-white p-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">GFLM Sellos Industriales - Admin</h1>
+        <a href="index.html" className="hover:text-blue-300">Volver al Inicio</a>
+      </nav>
+    );
+
+    const AdminPanel = () => {
+      const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+      const [email, setEmail] = React.useState('');
+      const [password, setPassword] = React.useState('');
+      const [formData, setFormData] = React.useState({
+        id: '', name: '', material: '', price: '', description: ''
+      });
+      const [editId, setEditId] = React.useState(null);
+      const [seals, setSeals] = React.useState([]);
+
+      React.useEffect(() => {
+        if (isAuthenticated) {
+          fetch('http://localhost:5000/api/seals')
+            .then(res => res.json())
+            .then(data => setSeals(data))
+            .catch(err => console.error('Error al cargar sellos:', err));
+        }
+      }, [isAuthenticated]);
+
+      const handleLogin = async (e) => {
+        e.preventDefault();
+        try {
+          const response = await fetch('http://localhost:5000/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const result = await response.json();
+          if (result.success) {
+            setIsAuthenticated(true);
+            setEmail('');
+            setPassword('');
+          } else {
+            alert(result.message);
+          }
+        } catch (error) {
+          alert('Error al iniciar sesión');
+        }
+      };
+
+      const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+      };
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+          let response;
+          if (editId) {
+            response = await fetch(`http://localhost:5000/api/seals/${formData.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...formData, price: parseFloat(formData.price) })
+            });
+            alert('Sello actualizado');
+          } else {
+            const newId = seals.length > 0 ? Math.max(...seals.map(s => s.id)) + 1 : 1;
+            response = await fetch('http://localhost:5000/api/seals', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...formData, id: newId, price: parseFloat(formData.price) })
+            });
+            alert('Sello añadido');
+          }
+          const updatedSeal = await response.json();
+          setSeals(editId
+            ? seals.map(seal => seal.id === parseInt(formData.id) ? updatedSeal : seal)
+            : [...seals, updatedSeal]);
+          setFormData({ id: '', name: '', material: '', price: '', description: '' });
+          setEditId(null);
+        } catch (error) {
+          alert('Error al guardar el sello');
+        }
+      };
+
+      const handleEdit = (seal) => {
+        setFormData(seal);
+        setEditId(seal.id);
+      };
+
+      const handleDelete = async (id) => {
+        try {
+          await fetch(`http://localhost:5000/api/seals/${id}`, { method: 'DELETE' });
+          setSeals(seals.filter(seal => seal.id !== id));
+          alert('Sello eliminado');
+          setFormData({ id: '', name: '', material: '', price: '', description: '' });
+          setEditId(null);
+        } catch (error) {
+          alert('Error al eliminar el sello');
+        }
+      };
+
+      if (!isAuthenticated) {
+        return (
+          <div>
+            <Navbar />
+            <section className="py-12 bg-gray-100 min-h-screen">
+              <h2 className="text-3xl font-bold text-center text-blue-900 mb-8">Acceso Administrador</h2>
+              <div className="max-w-md mx-auto px-4">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Correo Electrónico"
+                  className="w-full p-3 border rounded-lg mb-4"
+                />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Contraseña"
+                  className="w-full p-3 border rounded-lg mb-4"
+                />
+                <button
+                  onClick={handleLogin}
+                  className="bg-blue-900 text-white px-6 py-3 rounded-full hover:bg-blue-700 w-full"
+                >
+                  Ingresar
+                </button>
+              </div>
+            </section>
+          </div>
+        );
+      }
+
+      return (
+        <div>
+          <Navbar />
+          <section className="py-12 bg-gray-100 min-h-screen">
+            <h2 className="text-3xl font-bold text-center text-blue-900 mb-8">Panel de Administrador</h2>
+            <div className="max-w-4xl mx-auto px-4">
+              <h3 className="text-2xl font-semibold text-blue-900 mb-4">Gestionar Sellos Estándar</h3>
+              <div className="space-y-4 mb-12">
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Nombre del sello"
+                  className="w-full p-3 border rounded-lg"
+                />
+                <input
+                  type="text"
+                  name="material"
+                  value={formData.material}
+                  onChange={handleChange}
+                  placeholder="Material"
+                  className="w-full p-3 border rounded-lg"
+                />
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  placeholder="Precio"
+                  className="w-full p-3 border rounded-lg"
+                />
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Descripción"
+                  className="w-full p-3 border rounded-lg h-24"
+                ></textarea>
+                <button
+                  onClick={handleSubmit}
+                  className="bg-blue-900 text-white px-6 py-3 rounded-full hover:bg-blue-700"
+                >
+                  {editId ? 'Actualizar Sello' : 'Añadir Sello'}
+                </button>
+              </div>
+              <h3 className="text-2xl font-semibold text-blue-900 mb-4">Lista de Sellos</h3>
+              <div className="space-y-4">
+                {seals.map(seal => (
+                  <div key={seal.id} className="flex justify-between items-center bg-white p-4 rounded-lg shadow">
+                    <div>
+                      <h4 className="text-lg font-semibold text-blue-900">{seal.name}</h4>
+                      <p className="text-gray-600">Material: {seal.material}</p>
+                      <p className="text-gray-600">${seal.price.toLocaleString()}</p>
+                    </div>
+                    <div className="space-x-2">
+                      <button
+                        onClick={() => handleEdit(seal)}
+                        className="bg-yellow-600 text-white px-4 py-2 rounded-full hover:bg-yellow-700"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleDelete(seal.id)}
+                        className="bg-red-600 text-white px-4 py-2 rounded-full hover:bg-red-700"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<AdminPanel />, document.getElementById('root'));
+  </script>
+</body>
+</html>
